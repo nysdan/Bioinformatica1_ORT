@@ -1,0 +1,39 @@
+## "patogenos.txt" es una lista de organismos pertenecientes al género Campylobacter que han sido reportados como causantes de infección en humanos y/o animales. Como estoy trabajando sobre el género Campylobacter, voy a organizar mi directorio de trabajo y colocar en una carpeta llamada "Campylobacter" todos los materiales sobre este tema.
+1. Crear la carpeta "Bioinfo2"
+2. Entrar en la carpeta
+3. Copiar el archivo "patogenos.txt" a la carpeta recién creada
+
+## El archivo "atp.fasta" contiene las secuencias del gen atpA de especies de Campylobacter y Helicobacter.
+
+1. Copiar el archivo atp.fasta desde su ubicación hasta la carpeta Campylobacter, pero llamarla "sequencias_atpA.fasta"
+2. Me di cuenta de que escribí mal el nombre del archivo de secuencias de atpA. Lo renombro apropiadamente.
+
+## Visualizar el archivo:
+1. ejecuto "cat atp.fasta". ¿Qué obtengo?
+2. ¿qué pasa con "more" y "less"
+3. ¿qué obtengo con head?
+
+## Buscar patrones en el texto sin abrirlo:
+1. ¿A qué especies pertenecen las secuencias de atpA presentes en el archivo fasta?
+2. ¿Cuántas secuencias hay en el archivo? 
+3. ¿Cuántas secuencias de Campylobacter hay en el archivo? 
+
+## El formato de archivo fasta contiene siempre un "header" que empieza con ">" y un nombre o identificador de la secuencia, seguido en la siguiente línea de la secuencia correspondiente.
+
+1. ¿A qué especie corresponde la primera secuencia?
+2. Imprimir la primera secuencia en pantalla
+
+## El segundo paso del procedimiento que quiero describir en el archivo "procedimiento.txt" es "2. Obtener el genoma core utilizando parsnp"
+
+1. Agregar el paso 2 al final de procedimiento.txt
+2. Cambiar el programa utilizado para la obtención del genoma core a "Mauve"
+
+###########
+
+ grep -d
+print lines matching a pattern
+-d ACTION, --directories=ACTION
+       If an input file is a directory, use ACTION to process it.  By  default,  ACTION  is  read,  which
+       means  that  directories  are  read  just  as  if  they  were  ordinary files.  If ACTION is skip,
+       directories are silently skipped.   If  ACTION  is  recurse,  grep  reads  all  files  under  each
+       directory, recursively; this is equivalent to the -r option.

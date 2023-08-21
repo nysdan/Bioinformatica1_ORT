@@ -1,0 +1,25 @@
+Tenemos el archivo tabla.
+1) ¿Cómo inspeccionarlo sin abrirlo?
+2) ¿Cuántos genes hay, aparentemente, en la tabla?
+
+Ahora creemos una tabla secundaria sin la primera línea (nombres de columna) y la llamamos t2.
+Siempre podemos volver a consultar "tabla" para ver qué es cada columna. 
+3) ¿Cuál es el gen más largo y cuántos bp tiene?
+4) ¿Cuál es el gen y cuántos bp tiene?
+5) ¿cómo podemos asegurarnos de que no hay genes repetidos? 
+	O sea, sé cuántas filas hay, pero ¿todas tienen genes distintos?
+6) Si hay algún o algunos genes (columna 1) que aparezcan más de una vez, nombrarlo(s).
+7) Para evitar errores, voy a eliminar todo lo que aparezca repetido. Si es uno solo, elimino las dos versiones. Para ello necesito saber no solo el nombre, sino en qué fila están. Para eliminar esas filas, ver cómo usar el comando con el que eliminamos los nombres de columna.
+Cuidado al eliminarlos. Si voy a eliminar varias filas cuyos números conozco, debo hacerlo en orden decreciente. ¿Por qué?
+Guardo la nueva tabla como t3.
+7) La columna "tipo" clasifica a los genes según sus valores de GC.
+	¿Cuántos tipos distintos hay?
+8) ¿Cuántos genes hay de cada tipo?
+
+Ahora repasemos un poco de awk y grep
+
+9) ¿Cuántos genes tienen un gc >= 0.5 y un largo > 700?
+10) De los genes tipo B, ¿cuál es el más largo?
+11) ¿Cuántos genes "B" tienen un gc < 0.3?
+12) ¿Cuántos genes "D" tienen un gc < 0.3? ¿Por qué será?
+
