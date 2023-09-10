@@ -1,0 +1,56 @@
+
+# En un dotplot, representamos la similitud entre dos secuencias colocando una en el eje x y otra en el eje y.
+# Usaremos 1 para representar coincidencias y (.) para discrepancias. Las secuencias son ACBD y ABCD.
+
+# D . . . 1
+# C . 1 . .
+# B . . 1 .
+# A 1 . . .
+#   A C B D
+
+
+# Importamos el paquete seqinr
+library(seqinr)
+
+# Cargamos dos secuencias de muestra
+aafile <- system.file("sequences/seqAA.fasta", package = "seqinr")
+dnafile <- system.file("sequences/malM.fasta", package = "seqinr")
+AA <- read.fasta(aafile)
+NN <- read.fasta(dnafile)
+aa <- AA[[1]]
+nn <- NN[[1]]
+
+# Usaremos la función dotPlot para crear los dotplots.
+
+# Argumentos de la función dotPlot:
+# - x, y: Las secuencias que se compararán.
+# - wsize: Tamaño de la ventana de comparación. Define cuántas bases se comparan a la vez.
+# - wstep: Paso de la ventana. Controla la separación entre las ventanas de comparación.
+# - nmatch: Número mínimo de coincidencias requeridas en una ventana para que se marque como una coincidencia.
+
+# Primero, creamos un dotplot de nn contra sí misma y otro de aa contra sí misma.
+dotPlot(nn, nn)
+
+# ¿Por qué nn tiene más ruido? Podemos reducirlo ajustando los parámetros de la función dotPlot.
+
+# Experimentaremos con los parámetros:
+# - wsize: Tamaño de la ventana de comparación.
+# - wstep: Paso de la ventana.
+# - nmatch: Número mínimo de coincidencias requeridas en una ventana.
+
+# Reducimos el ruido en nn ajustando los parámetros.
+dotPlot(nn, nn, wsize = 8, wstep = 8, nmatch = 8)
+
+# Ahora, modificaremos nn, introduciendo mutaciones en aproximadamente el 10% de las bases.
+bases <- s2c("acgt")
+sitios <- sample(1:921, 123)
+nn2 <- nn
+nn2[sitios] <- sample(bases, 123, replace = TRUE)
+
+# Comparamos nn con nn2 y ajustamos los parámetros para observar los efectos.
+dotPlot(nn, nn2)
+dotPlot(nn, nn2, wsize = 4, wstep = 4, nmatch = 4)
+dotPlot(nn, nn2, wsize = 4, wstep = 4, nmatch = 3)
+dotPlot(nn, nn2, wsize = 5, wstep = 5, nmatch = 5)
+dotPlot(nn, nn2, wsize = 5, wstep = 5, nmatch = 4)
+dotPlot(nn, nn2, wsize = 6, wstep = 4, nmatch = 5)
