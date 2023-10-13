@@ -1,0 +1,30 @@
+pmarinus <- read.fasta("Pmarinus.fna") ecoli <- read.fasta("Ecoli.fna") bjaponicum <- read.fasta("Bjaponicum.fna")
+GC(pmarinus)
+GC(ecoli)
+GC(bjaponicum)
+# 0.36 # 0.51
+# 0.64
+CDSpmarinus <- read.fasta("Pmarinus.cds") CDSecoli <- read.fasta("Ecoli.cds") CDSbjaponicum <- read.fasta("Bjaponicum.cds") GCpmarinus <- sapply(CDSpmarinus,GC)
+GCecoli <- sapply(CDSecoli,GC)
+GCbjaponicum <- sapply(CDSbjaponicum,GC)
+GCs <- list(GCpmarinus, GCecoli, GCbjaponicum) boxplot(GCs, names=c("Pmarinus","Ecoli","Bjaponicum"))
+
+
+ S1 <- read.fasta("~/Documents/ORT/Bioinfo1/2018/Tema7_GenoComp/GCskew/CP004009.fna") gc <- GC(S1[[1]])
+gc  S1 <- read.fasta("~/Documents/ORT/Bioinfo1/2018/Tema7_GenoComp/GCskew/CP004009.fna") gc <- GC(S1[[1]])
+gcS1_1 <- getFrag(object = S1, begin = 1, end = 10000)
+GC_1 <- GC(S1_1[[1]])
+S1_2 <- getFrag(object = S1, begin = 2000000, end = 2010000)
+GC_2 <- GC(S1_2[[1]])
+S1_3 <- getFrag(object = S1, begin = 3000000, end = 3010000)
+GC_3 <- GC(S1_3[[1]])
+S1_4 <- getFrag(object = S1, begin = 4000000, end = 4001000)
+GC_4 <- GC(S1_4[[1]])
+data.frame(Secuencia=c("S1_1", "S1_2", "S1_3", "S1_4", "S1"),
+Posicion=c("1 a 10.000", "2.000.000 a 2.010.000",
+"3.000.000 a 3.010.000", "4.000.000 a 4.010.000", "Total"),
+GC=c(GC_1, GC_2, GC_3, GC_4, gc))
+
+ s1<-S1[[1]]
+largo <- length(s1) largo/10000
+
