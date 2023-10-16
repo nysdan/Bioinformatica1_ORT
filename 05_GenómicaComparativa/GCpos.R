@@ -75,3 +75,57 @@ plot(x = pos, y = GCwin, type = "l")
 abline(h = GC(ecoli[[1]]), col = "blue")
 title(main = "GC por posicion", xlab = "Posicion", ylab = "GC")
 
+
+
+# Sesgo en las composiciones nucleotídicas --------------------------------
+
+NtComp <- list()
+for(i in 1:550){
+  NtComp[[i]] <- count(seq = sp[[i]],wordsize = 1, start = 1, freq=FALSE)
+}
+
+
+NtComp <- lapply(sp, function(x) count(x, wordsize = 1, start = 1, freq = F))
+
+
+# | C/G -------------------------------------------------------------------
+
+
+CdivG <- c()
+for(i in 1:length(NtComp)){
+  CdivG[i] <- NtComp[[i]][2]/NtComp[[i]][3]
+}
+
+plot(x = pos, y = CdivG, type = "l")
+abline(h = 1, col = "blue")
+title(main = "C/G por posicion")
+
+
+# C-G ---------------------------------------------------------------------
+
+
+CmenosG <- c()
+for(i in 1:length(NtComp)){
+  CmenosG[i] <- NtComp[[i]][2]-NtComp[[i]][3]
+}
+
+plot(x = pos, y = CmenosG, type = "l")
+abline(h = 0, col = "blue")
+title(main = "C-G por posicion")
+
+
+# GC skew -----------------------------------------------------------------
+
+GC_skew <- c()
+for(i in 1:length(NtComp)){
+  GC_skew[i] <- (NtComp[[i]][3]-NtComp[[i]][2])/(NtComp[[i]][3]+NtComp[[i]][2])
+}
+
+plot(x = pos, y = GC_skew, type = "l")
+abline(h = 0, col = "blue")
+title(main = "GC Skew por posicion")
+
+
+ol <- oriloc(seq.fasta = "Bacterias/genome.seq/Ecoli.fna", gbk = "ecoli.gbk")
+
+draw.oriloc(ol, main = "Grafico Oriloc")
