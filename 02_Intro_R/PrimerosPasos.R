@@ -178,24 +178,36 @@ rownames(M1)
 # Ahora, puedes crear un data frame a partir de este archivo de texto.
 
 # Lectura de un archivo de tabla
-DF3 <- read.table(file = "datos_tabla.txt", header = TRUE)
+DF <- read.table(file = "datos_tabla.txt")
+DF
+
+# ¿DF es lo que esperabas?
+# ¿Cuales son los argumentos de read.table()? Lista algunos argumentos. ¿Cual agregarías?
 
 # Aquí, "datos_tabla.txt" es el nombre del archivo de texto que creaste previamente.
+
+?read.table
+
+DF1 <- read.table(file = "datos_tabla.txt", header = TRUE)
+
 # La opción "header = TRUE" indica que la primera fila contiene los nombres de las columnas.
 
+# Comparar DF y DF1. ¿En qué se diferencian?
+
+
 # Estructura de un data frame
-str(DF3)
+str(DF1)
 
 # Acceso a columnas de un data frame
 # Puedes acceder a las columnas de un data frame utilizando el operador '$' o '[,]'.
 # Ejemplos:
 
-DF3$Nombres     # Acceso a la columna "Nombres"
-DF3$Edades      # Acceso a la columna "Edades"
-DF3$Obs         # Acceso a la columna "Obs"
+DF1$Nombres     # Acceso a la columna "Nombres"
+DF1$Edades      # Acceso a la columna "Edades"
+DF1$Obs         # Acceso a la columna "Obs"
 
 # También puedes utilizar la notación de índice para acceder a columnas.
-# Por ejemplo, DF3[, 1] accede a la primera columna (Nombres).
+# Por ejemplo, DF1[, 1] accede a la primera columna (Nombres).
 
 # Definiciones de tipos de objetos:
 
@@ -213,27 +225,39 @@ DF3$Obs         # Acceso a la columna "Obs"
 # Ejemplos de subsetting:
 
 # Subsetting de filas basado en una condición
-DF3[DF3$Edades > 15, ]
+DF1[DF1$Edades > 15, ]
 
 # Subsetting de columnas por nombre
-DF3$Nombres
+DF1$Nombres
 
 # Subsetting de columnas por índice
-DF3[, 2]
+DF1[, 2]
 
 # Subsetting de múltiples columnas
-DF3[, c("Nombres", "Edades")]
+DF1[, c("Nombres", "Edades")]
+
+# Otro ejemplo
+
+DF2 <- read.table(file = dieta_peso.tsv, header = TRUE) # Dónde está el error? Corrígelo y vuelve a ejecutar
+
+# ¿Cuál es el promedio de cada columna?
+
+DF2 <- read.table(file = dieta_peso.tsv, header = TRUE) # qué argumento hay que agregar?
+
+# Guarda la tabla filtrada que contiene los pesos para la dieta 1 como dieta1_peso.tsv
+
+write.table(...)
 
 
-# Data frames -------------------------------------------------------------
+# Data frames a partir de vectores -------------------------------------------------------------
 
 # Creación de un vector
 vec6 <- letters[1:4]  # Creamos un vector 'vec6' con las primeras 4 letras minúsculas.
 
 # Creación de un data frame a partir de dos vectores
-DF1 <- data.frame(vec2, vec3)  # Creamos un data frame 'DF1' con 'vec2' y 'vec3' como columnas.
-colnames(DF1)  # Obtenemos los nombres de las columnas de 'DF1'.
-rownames(DF1)  # Obtenemos los nombres de las filas de 'DF1'.
+DF3 <- data.frame(vec2, vec3)  # Creamos un data frame 'DF3' con 'vec2' y 'vec3' como columnas.
+colnames(DF3)  # Obtenemos los nombres de las columnas de 'DF3'.
+rownames(DF3)  # Obtenemos los nombres de las filas de 'DF3'.
 
 # Creación de vectores para unir en un data frame
 nombres <- c("Paola", "Pablo", "Laura", "Camilo")
@@ -242,29 +266,18 @@ edades <- c(30, 18, 24, 28)
 cbind(nombres, edades)  # Combinamos 'nombres' y 'edades' en una matriz.
 
 # Creación de un data frame a partir de dos vectores
-DF2 <- data.frame(nombres, edades)  # Creamos un data frame 'DF2' con 'nombres' y 'edades'.
-str(DF2)  # Mostramos la estructura de 'DF2'.
+DF4 <- data.frame(nombres, edades)  # Creamos un data frame 'DF4' con 'nombres' y 'edades'.
+str(DF4)  # Mostramos la estructura de 'DF4'.
 
-DF2[, 1]  # Accedemos a la primera columna de 'DF2'.
+DF4[, 1]  # Accedemos a la primera columna de 'DF4'.
 
 # Convertir una matriz en un data frame
 as.data.frame(M1)  # Convertimos 'M1' en un data frame.
 
-# Leer un archivo de tabla con o sin encabezados
-
-read.table(file = "ejemplotabla.tsv", header = TRUE)  # Leemos el archivo con encabezados.
-
-# Diferencias con y sin header = T
-# El archivo ejemplotabla.tsv debe tener encabezados para que header = TRUE funcione correctamente.
-
-# Leer un archivo de tabla con decimales en formato "," en lugar de "."
-DF3 <- read.table(file = "ejemplotabla.tsv", header = TRUE)  # Leemos el archivo con encabezados.
-DF4 <- read.table(file = "ejemplotabla.tsv", header = TRUE, dec = ",")  # Leemos el archivo con ',' como decimal.
-
 
 # Listas ------------------------------------------------------------------
 
-lista1 <- list(vec2, M1, DF3, "a")  # Creamos una lista llamada 'lista1' que contiene varios elementos diferentes.
+lista1 <- list(vec2, M1, DF1, "a")  # Creamos una lista llamada 'lista1' que contiene varios elementos diferentes.
 length(lista1)  # Obtenemos la longitud de la lista (número de elementos).
 
 str(lista1)  # Mostramos la estructura de 'lista1', incluyendo los tipos de datos de sus elementos.
@@ -278,4 +291,57 @@ lista1$e2  # Accedemos al elemento de 'lista1' con el nombre 'e2'.
 
 names(lista1)  # Mostramos los nombres de los elementos de 'lista1'.
 
-DF2$edades  # Accedemos a la columna 'edades' del data frame 'DF2'.
+DF1$edades  # Accedemos a la columna 'edades' del data frame 'DF1'.
+
+# Plots ---------------------------------------------------------------------
+
+# Trabajamos con dieta_peso.tsv. Si no está DF1 en el ambiente de trabajo volvemos a llamar read.table()
+
+ls() # lista todos los objetos del ambiente
+
+# Hacemos un plot donde en los ejes figuren las dos variables "peso"
+
+plot(DF2$peso1, DF2$peso2)
+plot(DF2$peso1, DF2$peso2, pch = 20, col = "blue", xlab = "Peso 1", ylab = "Peso 2", main = "Gráfico pesos")
+legend(1,8,"Esto, ya veremos para qué sirve.")
+
+
+# lo guardamos en un pdf
+
+pdf("primer_gráfico_guardado.pdf")
+plot(datos$peso1, datos$peso2, pch = 20, col = "blue", xlab = "Peso 1", ylab = "Peso 2", main = "Gráfico pesos")
+legend(1,8,"Esto, ya veremos para qué sirve.")
+dev.off()
+
+
+# Agrupar por una variable con aggregate
+
+
+aggregate(DF2[,-1],by=list(DF2$dieta) ,FUN="mean")
+
+¿Qué hace? ¿Qué dato obtengo si en vez de "mean" uso otra función, por ejemplo, "length"?
+
+# Correlaciones ----------------------------------------
+
+a <- c(5,6,7,6,4,5,8,7,5,3,1,2,3,4)
+b <- c(1,4,7,4,3,8,15,12,7,4,2,3,4,5)
+cor(a,b)
+plot(a,type="l")
+plot(b,type="l")
+
+# En un mismo gráfico
+
+plot(a,type="l",ylim=c(0,15),ylab="")
+par(new=TRUE)
+plot(b,type="l",ylim=c(0,15),ylab="",col="red")
+legend(1,12,legend=c("a","b"),col=c("black","red"),pch="/")
+legend(7,1,legend="cor = 0.71",bty="n")
+
+v<-c()
+for (i in 1:10000){
+	v[i] <- cor(a,sample(b))
+}
+
+max(v)
+min(v)
+hist(v,50)
