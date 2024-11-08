@@ -1,0 +1,132 @@
+---
+title: "COA"
+author: "Daniela Costa"
+date: "11/2024"
+output: pdf
+---
+
+# Uso de codones sinónimos en un genoma bacteriano
+
+Si las sustituciones nucleotídicas se produjeran totalmente por azar, se esperaría que en cada posición la probabilidad de encontrar cualquiera de los nucleótidos es la misma. En estas condiciones, encontraríamos que la frecuencia de cada uno de los codones sinónimos es la misma en los genes que codifican proteínas. Por ejemplo, el aminoácido (AA) Valina (Val) es codificado por 4 codones (GUU, GUC, GUA y GUG). En ausencia de selección, se esperaría encontrar aproximadamente el mismo número de cada uno de los codones sinónimos. El sesgo en el uso de codones implica que hay algunos codones preferidos, que se encuentran en mayor proporción que sus sinónimos, y otros cuya frecuencia es sustancialmente menor.
+Las diferencias encontradas en el uso de codones pueden ser explicadas por la abundancia de ARNt isoaceptores, el contenido GC del genoma, entre otros. 
+
+En este práctico, vamos a observar el sesgo en el uso de codones para cada secuencia codificante en un genoma bacteriano, mediante la aplicación de un análisis de correspondencias.
+
+Luego, vamos a ver cómo se correlaciona el contenido GC general y en las tres posiciones del codón con el sesgo en el uso de codones.
+
+# Análisis de correspondencias 
+
+Primero vamos a seleccionar como *working directory* el directorio que contiene al archivo `COA.R`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, eval = FALSE}
+setwd("/home/jovian/Bioinformatica1_ORT/05_GenómicaComparativa/")
+```
+
+Ahora cargamos las librerías `seqinr` y `ade4`
+
+```{r}
+library(seqinr)
+library(ade4)
+```
+
+Estamos listos para cargar los datos que usaremos: Vamos a cargar el archivo `.fasta`
+
+```{r}
+bicho <- read.fasta("cds/bicho.ffn")
+```
+
+Vamos a crear ahora una función auxiliar, que nos permitirá obtener el uso de codones de una secuencia, y transformarlo en un data frame.
+
+```{r}
+mkdata <- function(seqs){
+  # seqs es una lista de seqs como la que se genera con read.fasta()
+  tab <- sapply(seqs, uco)  
+  tab <- as.data.frame(tab)
+  return( tab )
+}
+```
+
+Ahora aplicaremos la función anterior a el objeto bicho, con las secuencias de los genes de un genoma:
+
+```{r}
+tab <- mkdata(bicho)
+dim(tab)
+```
+
+La tabla que se generó tiene 64 filas, que corresponden a los 64 codones posibles, y 2158 columnas, correspondientes a las secuencias en `bicho`.
+
+Ahora vamos a aplicar dudi.coa para obtener el análisis de correspondencias: 
+
+```{r}
+coa <- dudi.coa(tab, scan = FALSE, nf = 3)
+```
+
+Ahora aplicaremos un Within COA para eliminar el efecto originado por las diferentes cantidades de codones para cada aminoácido en un genoma.
+```{r}
+facaa <- as.factor(aaa(translate(sapply(rownames(tab),s2c))))
+scua <- wca(coa, facaa, scan = FALSE, nf = 3)
+
+```
+
+Aquí `facaa` son los nombres de los aminoácidos codificados por cada codón representado como una fila en tab.
+
+Ahora, vamos a hacer gráficos correspondientes a los Componentes 1 y 2  y 1 y 3 de `scoa`.
+Cada punto representa un gen 
+
+```{r}
+par(mfrow=c(1,2))
+# Para los ejes 1 y 2
+plot(scua$co[,1], #  coordenadas en x
+     scua$co[,2], #  coordenadas en y
+     pch = 20, # tamaño de los puntos
+     col = "orange", # color de los puntos
+     xlab = "Axis 1", ylab = "Axis 2") # nombres de los ejes
+s.label(scua$li, add.plot = TRUE, clab = 0.75,boxes = FALSE) # agrega etiquetas
+abline(v=0,h=0) # agrega líne horizontal y verticel
+
+# Para los ejes 1 y 3
+
+plot(scua$co[,1],scua$co[,3],pch=20,col="orange",xlab="Axis 1",ylab="Axis 3")
+s.label(scua$li, add.plot = TRUE, clab = 0.75,boxes = FALSE)
+abline(v=0,h=0)
+```
+
+Vemos en los gráficos, que los codones de la derecha son ricos en G o C, y que los de la izquierda son ricos en A o T.
+
+A continuación vamos a ver cómo se relacionan el uso de codones y el contenido de GC general y en las 3 posiciones del codón.
+
+## Correspondencia entre GC y el uso de codones
+
+Ahora vamos a ver si hay alguna asociación o correspondencia entre los contenidos de GC y las coordenadas de los genes en el análisis de correspondencias obtenido anteriormente.
+
+Primero obtenemos los GC en las 3 posiciones de cada codón, con las funciones `GC1`, `GC2` y `GC3`, y el GC general con `GC`.
+Vamos a guardar los resultados en un data frame llamado tableGC.
+
+```{r}
+tableGC <- data.frame(GC = sapply(bicho,GC),
+                      GC1 = sapply(bicho,GC1),
+                      GC2 = sapply(bicho,GC2),
+                      GC3 = sapply(bicho,GC3))
+str(tableGC)
+```
+
+Ahora, vemos si existe correlación entre los contenidos GC y las coordenadas de los genes en el análissi de correspondencias
+
+```{r}
+round(cor(scua$co, tableGC), 2)
+```
+
+Cuanto más cercano a 1 el valor de correspondencias, mayor es la correlación. 
+Vemos una gran correlación entre Comp1 y GC3.
+
+```{r}
+plot(scua$co$Comp1,
+     tableGC$GC3)
+```
+
+De esta manera podemos concluir que el eje 1 del plot obtenido a partir del análisis de correspondencias se correlaciona con el GC en la tercera posición del codón.
