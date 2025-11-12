@@ -1,0 +1,166 @@
+---
+title: "Genómica Comparativa: largos de los genomas"
+author: "Prof. Daniela Costa"
+date: "08/11/2025"
+output: 
+  html_document: 
+    toc: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(seqinr)
+library(rmarkdown)
+library(knitr)
+if(!"DT" %in% installed.packages()[,1]){
+  install.packages("DT")
+}
+library(DT)
+library(ggplot2)
+```
+
+# Introducción
+
+## ¿Qué es la genómica comparativa?
+
+> **Genómica comparativa:** Colección de todas las actividades de investigación que derivan en la obtención de conocimiento biológico a partir de la comparación sistemática de la información genética (secuencias de ADN, genes, organización genómica, regiones no codificantes) tanto entre diferentes especies como entre individuos de la misma especie.
+
+Su objetivo principal es identificar similitudes y diferencias para:
+
+- Comprender las relaciones evolutivas entre organismos y cómo han divergido a lo largo del tiempo.
+- Determinar la función de los genes y otras características genómicas, basándose en su conservación o variación entre especies.
+- Identificar las "firmas" de los procesos evolutivos en los genomas.
+
+## ¿Cómo vamos a estudiar los genomas?
+
+En esta unidad vamos a estudiar los genomas de diferentes organismos a tres niveles:
+
+1.  Comparación del largo de los genomas de diferentes organismos y su relación con el estilo de vida, y la paradoja del valor C.
+2.  Composiciones nucleotídicas:
+    1.  GC entre diferentes genomas
+    2.  Variación intra-genómica de GC
+    3.  Sesgos en las composiciones nucleotídicas a lo largo de los genoams
+3.  Uso de codones sinónimos
+
+# Largo de los genomas
+
+En esta parte partimos de la observacion de que los organismos de una misma especie tienen genomas de aproximadamente el mismo largo:
+
+-   *Escherichia coli* str. K-12 substr. MG1655 ([NC_000913.3](https://www.ncbi.nlm.nih.gov/nuccore/NC_000913.3/ "E. coli K-12 substr. MG1655")): 4.641.652 bases
+-   *E. coli* O157:H7 str. Sakai (cromosoma, [NC_002695.2](https://www.ncbi.nlm.nih.gov/nuccore/NC_002695.2/ "E. coli O157:H7 str. Sakai")): 5.498.578 bases
+-   *E. coli* 97-3250 (cromosoma, [CP027599.1](https://www.ncbi.nlm.nih.gov/nuccore/CP027599.1/ "E. coli 97-3250")): 5.942.969 bases
+
+## Hipótesis
+- *A priori* puede parecer que los organismos más *'complejos'* tienen genomas más largos que los organismos más *'primitivos'*.
+- El estilo de vida de un organismo puede reflejarse en el largo del genoma
+
+## Metodología
+Comparamos los largos de los genomas de diferentes organismos y obtenemos informacion sobre su estilo de vida, en el caso de procariotas
+
+## Resultados
+
+Nos basamos en una tabla de que contiene el largo del genoma de diferentes organismos:
+
+```{r, echo = T}
+largos <- read.table("Largos.tsv", header = T, sep = "\t", fill = T)
+largos <- largos %>% 
+  mutate(Tipo = factor(Tipo, 
+                       levels = c("Procariota", 
+                                  "Protista",
+                                  "Planta",
+                                  "Animal")))
+```
+
+
+```{r, echo = F}
+kable(largos, 
+      digits = 3, 
+      col.names = c("Organismo",
+                    "Tipo de organismo",
+                    "Largo del genoma (Mb)",
+                    "Estilo de vida"))
+
+# DT::datatable(largos, 
+# 							rownames = F, 
+# 							colnames = c("Organismo" = 1,
+# 													 "Tipo de organismo" = 2,
+# 													 "Largo del genoma (Mb)" = 3,
+# 													 "Estilo de vida" = 4), 
+# 							caption = "Largo de los genomas de diferentes organismos",
+# 							# filter = "top",
+# 							# extensions = 'Buttons',
+# 							options = list(dom = 'Bfrtip', 
+#                          buttons = c('copy', 
+#                          						'csv', 
+#                          						'excel', 
+#                          						'pdf', 
+#                          						'print')),
+    					# escape = F)
+
+```
+
+A partir de los datos en esta tabla construimos el gráfico de largos vs. organismos con el paquete `ggplot2`.
+
+
+```{r}
+largos %>% 
+  mutate(Organismo = factor(Organismo, levels = largos$Organismo)) %>% 
+  ggplot() +
+  geom_col(aes(x = Organismo, 
+               y = Largo, 
+               fill = Tipo)) +
+  scale_y_log10() + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = -30, hjust = 0)) +
+  ggtitle(label = "Gráfico 1: Largo de los genomas y tipos de organismo")
+```
+
+
+```{r}
+largos_p <- largos %>% 
+  filter(Tipo == "Procariota") %>% 
+  arrange(Largo) 
+  
+largos_p %>% 
+  mutate(Organismo = factor(Organismo, levels = largos_p$Organismo)) %>% 
+  ggplot() +
+  geom_col(aes(x = Organismo, 
+               y = Largo, 
+               fill = Estilo_de_vida)) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = -30, hjust = 0), 
+        legend.title = element_blank(),
+        axis.title = element_blank()) +
+  ggtitle("Gráfico 2: Largos de genomas (Mb) y estilo de vida en organismos procariotas")
+  
+```
+
+## Conclusiones
+
+### Largos de los genomas y paradoja del valor C
+
+**Observaciones a partir del Gráfico 1:**
+
+Los genomas procariotas son los más pequeños, lo cual se ajusta a la hipótesis de que los organismos más *primitivos* tienen menores genomas. Sin embargo, al ver los genomas de plantas, animales y protistas, se observan genomas particularmente grandes en cada grupo:
+
+- Animales: Salamandras, con genomas de hasta 117,47 Gb ($1,174\times10^{11}$) bases), han acumulado grandes cantidades de ADN no codificante.
+- Plantas: Existen especies de helechos con hasta 160,45 Gb ($1,60\times10^{11}$ bases), que se explican debido a la poliploidía y a la acumulación de ADN no codificante.
+- Protistas: Se estima para la especie *Amoeba dubia*, un genoma de aproximadamente 670.000 Mb ($6,70\times10^{11}$ bases). El gran tamaño de su genoma se debe a la acumulación masiva de elementos repetitivos y a la ineficiencia de mecanismos para su eliminación.
+
+> **Valor C:** Cantidad en picogramos de ADN haploide en una célula.
+
+> **Paradoja del valor C:** La cantidad de ADN en una célula no se correlaciona con la complejidad biológica aparente del organismo.
+
+### Largos de los genomas y estilo de vida en organismos procariotas
+
+**Observaciones a partir del Gráfico 2:**
+
+El largo de los genomas se relaciona con el estilo de vida en organismos procariotas. Los organismos de vida libre tienden a tener genomas más grandes que los intracelulares obligados.
+
+- **Organismos intracelulares obligados** como *M. tuberculosis* presentan genomas pequeños, ya que han perdido genes y vias metabolicas enteras involucradas en la producción de nutrientes que pueden obtener directamente de su hospedero. El hospedero es un ambiente protegido y rico en nutrientes.
+- **Organsimos de vida libre** tienen genomas mayores, debido a que deben producir la mayor parte de los nutrientes que requieren para su metabolismo, que les permita a su vez adaptarse a condiciones ambientales cambiantes. 
+
+> En procariotas, el estilo de vida impulsa la pérdida de genes (lo que lleva a genomas pequeños en parásitos) o el mantenimiento de un repertorio genético diverso (lo que lleva a genomas grandes en organismos de vida libre), lo que demuestra una clara relación entre la ecología y la evolución del tamaño del genoma bacteriano.
+

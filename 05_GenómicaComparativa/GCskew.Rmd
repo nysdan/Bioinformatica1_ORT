@@ -1,0 +1,131 @@
+---
+title: "Genómica Comparativa: Sesgo en las composiciones nucleotídicas"
+author: "Prof. Daniela Costa"
+date: "08/11/2025"
+output: 
+  html_document: 
+    toc: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(seqinr)
+library(rmarkdown)
+library(knitr)
+if(!"DT" %in% installed.packages()[,1]){
+  install.packages("DT")
+}
+library(DT)
+library(ggplot2)
+```
+
+```{r, echo = F}
+ecoli <- read.fasta("Bacterias/genome.seq/Ecoli.fna")
+S <- ecoli[[1]]
+
+largo <- length(S)
+fragmentos <- ceiling(largo/10000)
+
+wsize = 10000
+step = 10000
+
+wins <- data.frame(
+  fragment_index = seq(1, ceiling(largo/wsize)),
+  from = seq(from = 1, to = largo, by = wsize),
+  to = c(seq(from = step, to = largo, by = wsize), largo) # Le agregamos la ultima pos
+)
+
+fragmentos <- list()
+for(i in 1:nrow(wins)){
+  fragmentos[[i]] <- getFrag(object = S, begin = wins$from[i], end = wins$to[i])
+}
+
+
+```
+
+
+Si las tasas de sustitución para las hebras *leading* y *lagging* fueran iguales, los nucleótidos complementarios se encontarían en igual frecuencia en la misma hebra, o sea, $A=T$ y $G=C$. Sin embargo, se observa que la frecuencia de un nucleótido $N_1$ es diferente a $N_2$, siendo $N_1$ y $N_2$ nucleótidos complementarios. 
+
+Vamos a calcular el sesgo en la composición de nucleótidos complementarios para el genoma que venimos trabajando, utilizando *Sliding windows* como implementamos anteriormente. 
+
+Para esto, primero debemos calcular el contenido de cada base en cada fragmento. 
+
+Primero, creamos una lista vacía que, mediante un loop `for` llenaremos con el número de bases de cada tipo (A, C, G y T) para cada fragmento.
+
+La función `count()` del paquete `seqinr` se utiliza para contar la ocurrencia de *k*-meros. Al setear `wordsize = 1` estaremos contando las bases individuales.
+
+```{r}
+conteos <- list()
+
+for(i in 1:length(fragmentos)){
+  conteos[[i]] <- seqinr::count(fragmentos[[i]], wordsize = 1)
+}
+
+```
+
+`conteos` es una lista que contiene las ocurrencias de las bases, siempre en el mismo orden (A-C-G-T):
+
+```{r echo=FALSE}
+head(conteos, n = 3)
+```
+
+Ahora buscamos extraer los valores de "g" y de "c" para cada elemento de la lista `conteos`, los cuales son vectores de char de largo 4, con nombres.
+
+```{r}
+# getElement # <- hace lo mismo que [[]]
+```
+
+Aplicamos `getElement` dentro de funcion anonima para poder pasarle el parametro `name`:
+
+```{r}
+Gcount <- sapply(conteos, getElement, name = "g")
+Ccount <- sapply(conteos, getElement, name = "c")
+Acount <- sapply(conteos, getElement, name = "a")
+Tcount <- sapply(conteos, getElement, name = "t")
+```
+
+Ahora calcularemos diferentes sesgos:
+
+#### C sobre G:
+
+```{r}
+CdivG <- Ccount / Gcount
+
+plot(x = wins$from, y = CdivG, type = "l")
+
+abline(h = 1, col = "blue")
+title(main = "C/G por posicion")
+```
+
+Pero los cálculos más utilizados son C-G, al que llamaremos sesgo absoluto, o (C-G)/(G+C), conocido como sesgo relativo o GC skew.
+
+#### Sesgo absoluto
+
+$$
+GC_{skew.Abs} = C-G
+$$
+
+```{r}
+CmenosG <- Ccount - Gcount
+plot(x = wins$from, y = CmenosG, type = "l")
+# plot(x = wins$fragment_index, y = CdivG, type = "l")
+abline(h = 0, col = "blue")
+title(main = "C-G por posicion")
+```
+
+#### Sesgo relativo
+$$
+GC_{skew.Rel}=\frac{C-G}{C+G}
+$$
+
+```{r}
+GCskew <- (Ccount-Gcount)/(Ccount+Gcount)
+plot(x = wins$from, y = GCskew, type = "l")
+abline(h = 0, col = "blue")
+title(main = "GC skew por posicion")
+```
+
+
+>**Pregunta** ¿A qué se deben las diferencias en los sesgos de GC que se observan en los gráficos?

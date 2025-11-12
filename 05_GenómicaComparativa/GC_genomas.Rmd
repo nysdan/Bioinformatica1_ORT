@@ -1,0 +1,319 @@
+---
+title: "Genómica Comparativa: Sesgo en las composiciones nucleotídicas"
+author: "Prof. Daniela Costa"
+date: "08/11/2025"
+output: 
+  html_document: 
+    toc: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(seqinr)
+library(rmarkdown)
+library(knitr)
+if(!"DT" %in% installed.packages()[,1]){
+  install.packages("DT")
+}
+library(DT)
+library(ggplot2)
+```
+
+
+# Composicion nucleotidica a lo largo del genoma
+
+En las clases anteriores calculamos el contenido GC utilizando la función `GC()` del paquete `seqinr`. La fórmula que utiliza esta función es: 
+$$
+GC=\frac{C+G}{A+C+G+T}
+$$ 
+
+Como se ve en la fórmula, el contenido GC que se obtiene es un valor medio para toda la secuencia considerada, ya que toma los conteos totales de cada base nitrogenada.
+
+Utilizando R podemos obtener el contenido GC del cromosoma de la cepa *Escherichia coli* APEC O78:
+
+```{r}
+ecoli <- read.fasta("Bacterias/genome.seq/Ecoli.fna")
+S <- ecoli[[1]]
+
+# Seleccionamos ecoli[[1]] porque nos enfocaremos en el cromosoma de esta cepa.
+# Usamos [[1]] porque ecoli es una lista y la función GC() requiere que la secuencia sea un vector de caracteres
+
+gc <- GC(S)
+#
+```
+Así, el GC medio de esta secuencia es **`r gc`**.
+
+Pero ¿el contenido GC es uniforme a lo largo de todo el genoma?
+
+Para responder esta pregunta, primero determinaremos el contenido GC en fragmentos dispersos en el genoma, para luego utilizar un abordaje de ventana deslizante (*sliding window*). 
+
+
+## 1. Composición en fragmentos dispersos
+
+Por ejemplo utilizaremos las posiciones 1 a 10.000, 1.000.000 a 1.010.000, 2.000.000 a 2.010.000, 3.000.000 a 3.010.000 y 4.000.000 a 4.010.000.
+
+### 1.1 Obtención de los fragmentos:
+
+
+```{r}
+
+# Fragmento 1: posiciones de 1 a 10.000
+S1_0 <- getFrag(object = S, begin = 1, end = 10000)
+GC_0 <- GC(S1_0)
+
+# Fragmento 2: posiciones de 1.000.000 a 1.010.000
+S1_1 <- getFrag(object = S, begin = 1000000, end = 1010000)
+GC_1 <- GC(S1_1)
+
+# Fragmento 3: posiciones de 2.000.000 a 2.010.000
+S1_2 <- getFrag(object = S, begin = 2000000, end = 2010000)
+GC_2 <- GC(S1_2)
+
+# Fragmento 4: posiciones de 3.000.000 a 3.010.000
+S1_3 <- getFrag(object = S, begin = 3000000, end = 3010000)
+GC_3 <- GC(S1_3)
+
+# Fragmento 5: posiciones de 4.000.000 a 4.010.000
+S1_4 <- getFrag(object = S, begin = 4000000, end = 4001000)
+GC_4 <- GC(S1_4)
+
+# Fragmento 6: posiciones de 5.000.000 a 5.010.000
+S1_5 <- getFrag(object = S, begin = 5000000, end = 5001000)
+GC_5 <- GC(S1_5)
+```
+
+### 1.2. Obtención de un data frame con las posiciones de los fragmentos y sus respectivos valores de GC
+
+```{r}
+GC_posiciones <- data.frame(Secuencia = c("S0_1", 
+                                          "S1_1", 
+                                          "S1_2", 
+                                          "S1_3", 
+                                          "S1_4", 
+                                          "S1_5",
+                                          "S1"),
+                            Posicion = c("1 a 10.000", 
+                                         "1000000 a 1010000", 
+                                         "2000000 a 2010000", 
+                                         "3000000 a 3010000", 
+                                         "4000000 a 4010000",
+                                         "5000000 a 5010000", 
+                                         "Total"), 
+                            GC = c(GC_0,
+                                   GC_1, 
+                                   GC_2, 
+                                   GC_3, 
+                                   GC_4, 
+                                   GC_5,
+                                   gc))
+```
+
+
+```{r, echo = F}
+kable(x = GC_posiciones, 
+      digits = 4, 
+      caption = "Contenido GC de diferentes zonas del genoma de E.coli")
+```
+
+### 1.3 Gráfico de GC por posicionales con respecto a la media
+
+```{r, message=F, warning=F}
+GC_posiciones_p <- GC_posiciones %>% 
+  filter(!Posicion == "Total")
+GC_posiciones_p %>% 
+  separate_wider_delim(Posicion, 
+                         delim = " a ", 
+                         names = c("inicio", "final"), 
+                         too_few = "align_start") %>% 
+  mutate(inicio = as.numeric(inicio)) %>%  
+  mutate(final = as.numeric(final)) %>% 
+# GC_posiciones[7,(2:3)] <- c(GC_posiciones[1,2], GC_posiciones[6,3])
+  rowwise() %>% 
+  mutate(pos_m = mean(inicio, final, name.rm = T)) %>% 
+  ggplot() +
+  geom_segment(aes(x = pos_m, y = gc, yend = GC), linewidth = 5, color = "orange", alpha = .5) +
+  geom_abline(aes(intercept = gc, slope = 0), color = "steelblue") +
+  theme_minimal() +
+  xlab("Posicion") +
+  geom_smooth(aes(x = pos_m, y = GC), color = "orange", alpha = 0.5) +
+  geom_label(aes(x = 4e6, y = gc, label = "GC medio"), fill = "steelblue")
+```
+
+
+Vemos que el contenido GC varía en diferentes zonas del genoma con respecto a la media.
+
+# 2. Obtención del GC a lo largo del genoma utilizando *Sliding windows*
+
+Para obtener resultados más exactos, debemos calcular el GC de regiones más pequeñas. Para esto, utilizaremos un algoritmo tipo *Fuerza Bruta*, llamado *Sliding Window*. Esto significa que utilizaremos una *ventana* de largo *l*, que desplazaremos de a *k* pasos. A la secuencia contenida en cada una de estas ventanas les calcularemos el contenido GC.
+
+Utilizaremos dos métodos equivalentes:
+
+## (a) Utilizando factores y `split()`
+
+### 1. Definir los fragmentos: Eligiremos fragmentos de 10.000 bases:
+
+```{r}
+largo <- length(S)
+fragmentos <- ceiling(largo/10000)
+```
+
+Vemos que nos quedan `r floor(fragmentos)` fragmentos de 10.000 bases y uno de `r largo - floor(largo/10000)*10000`. En total son `r ceiling(largo/10000)` fragmentos.
+
+### 2. Generar una lista y un factor que definirán los fragmentos
+
+Primero definimos una lista vacía, y con un loop `for` lo llenamos con números del 1 al número de fragmentos, repetidos 10.000.
+
+```{r}
+lista <- list()
+for (i in 1:fragmentos){
+  lista[[i]] <- c(rep(i,10000))
+}
+```
+
+Luego generamos el factor `FAC`, que contiene los elementos de la lista concatenados.
+
+```{r}
+FAC <- as.factor(unlist(lista))
+```
+
+> Un factor es como un vector, pero sus valores están predefinidos en un atributo llamado `levels`. A cada nivel se le asigna un valor entero, de forma que cada vez que se encuentre el nivel dado en el vector, este será almacenado como el entero que le corresponde.
+
+Nos queda un factor de largo `r length(FAC)`. Como nuestro genoma es de `r largo`, eliminaremos las posiciones que nos sobran, es decir, desde `r largo+1` (`largo + 1`) hasta `r length(FAC)` (`lengt(FAC)`).
+
+```{r}
+FAC <- FAC[-c((largo+1):length(FAC))]
+length(FAC)
+```
+
+Ahora el largo del cromosoma y el del factor `FAC` coinciden.
+
+### 3.  Dividir la secuencia en los `r fragmentos` fragmentos. 
+
+Para esto utilizamos la función `split()`
+
+```{r}
+sp <- split(x = S, 
+            f = FAC, 
+            drop = FALSE)
+length(sp[[1]])
+length(sp[[length(sp)]])
+```
+
+`sp` es una lista de `r length(sp)`` secuencias, cada una de ellas de 10.000 bases, excepto la última, que tiene 8.435 bases.
+
+### 4. Obtener el contenido GC de cada fragmento
+
+Ya que tenemos las secuencias de los fragmentos en la lista `sp`, resta obtener los valores de GC:
+
+```{r}
+GCwin <- sapply(sp, GC)
+head(GCwin)
+```
+
+
+### 5. Graficamos posicion vs. GC
+Podemos graficar el contenido GC contra la posición de la primer base de cada ventana:
+
+```{r}
+pos <- seq.default(from = 1, to = length(FAC), by = 10000)
+plot(x = pos, y = GCwin, type = "l")
+abline(h = gc, col = "blue")
+```
+
+## (b) Otro método
+
+### 1. Definición de variable de iniciación
+
+En este método, primero definiremos las variables `wsize` y `step` para obtener las posiciones de los fragmentos:
+
+```{r}
+wsize = 10000
+step = 10000
+```
+
+El número de fragmentos se obtiene al dividir el largo de la secuencia entre `wsize`, redondeando hacia el número entero superior con `ceiling()`:
+
+```{r}
+largo <- length(S)
+fragmentos <- ceiling(largo/wsize)
+```
+
+
+### 2. Obtención del data frame de posiciones `wins`
+
+```{r}
+wins <- data.frame(
+  fragment_index = seq(1, ceiling(largo/wsize)),
+  from = seq(from = 1, to = largo, by = wsize),
+  to = c(seq(from = step, to = largo, by = wsize), largo) # Le agregamos la ultima pos
+)
+```
+
+Las primeras y las últimas filas de los fragmentos quedan de la siguiente manera:
+
+```{r, echo = F}
+kable(x = head(wins), 
+      digits = 4, 
+      caption = "Posiciones de los fragmentos")
+```
+
+```{r, echo = F}
+kable(x = tail(wins), 
+      digits = 4, 
+      caption = "Posiciones de los fragmentos")
+```
+
+### 3. Obtención de las secuencias de los fragmentos
+
+Ahora aplicaremos la función `getFrag()` sobre cada par de inicio-final que definen los fragmentos en `wins`, utilizando un loop `for`:
+
+```{r}
+fragmentos <- list()
+for(i in 1:nrow(wins)){
+  fragmentos[[i]] <- getFrag(object = S, begin = wins$from[i], end = wins$to[i])
+}
+
+```
+
+Se genera `fragmentos`, una lista que contiene la secuencia de cada fragmento definido en `wins`.
+
+### 4. Obtención del los GC:
+
+Ahora usamos `sapply` para obtener el vector de valores de GC:
+
+```{r}
+GCwin <- sapply(fragmentos, GC)
+```
+
+### 5. Gráfico de GC vs. posición con R base
+
+```{r}
+plot(x = wins$from, 
+     y = GCwin, 
+     type = "l", 
+     main = "GC por posicion", 
+     xlab = "Posicion", 
+     ylab = "GC")
+
+abline(h = GC(S), col = "blue")
+```
+
+### 6. Gráfico con `ggplot2`:
+
+Alternativamente, podemos utilizar el paquete `ggplot2`:
+
+```{r warning=FALSE}
+wins$GCwin <- GCwin
+ggplot(wins, mapping = aes(x = from, y = GCwin)) +
+  geom_line() + 
+  geom_hline(yintercept = gc, color = "steelblue") +
+  theme_minimal() +
+  xlab("Posicion") +
+  geom_label(aes(x = 4e6, y = gc, label = "GC medio"), fill = "steelblue")
+
+```
+
+Estos gráficos muestran la variación de GC a lo largo del cromosoma de *E. coli*, con puntos cada 10.000 bases.
+
