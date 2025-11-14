@@ -1,7 +1,6 @@
 ---
 title: "Genómica Comparativa: Sesgo en las composiciones nucleotídicas"
-author: "Prof. Daniela Costa"
-date: "08/11/2025"
+date: "`r Sys.Date()`"
 output: 
   html_document: 
     toc: true

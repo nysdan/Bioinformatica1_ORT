@@ -1,0 +1,204 @@
+---
+title: "Genómica Comparativa: Uso de codones sinónimos"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    toc: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Bioinformatica1_ORT/05_GenómicaComparativa/")
+```
+
+# Introducción
+
+Si las sustituciones nucleotídicas se produjeran totalmente por azar, se esperaría que en cada posición la probabilidad de encontrar cualquiera de los nucleótidos es la misma. En estas condiciones, encontraríamos que la frecuencia de cada uno de los codones sinónimos es la misma en los genes que codifican proteínas. 
+
+Por ejemplo, el aminoácido (AA) Valina (Val) es codificado por 4 codones (GUU, GUC, GUA y GUG). En ausencia de selección, se esperaría encontrar aproximadamente el mismo número de cada uno de los codones sinónimos. 
+
+El sesgo en el uso de codones implica que hay algunos codones preferidos, que se encuentran en mayor proporción que sus sinónimos, y otros cuya frecuencia es sustancialmente menor.
+
+Las diferencias encontradas en el uso de codones pueden ser explicadas por la abundancia de ARNt isoaceptores, el contenido GC del genoma, entre otros. 
+
+Ahora veremos ejemplos de uso de codones utilizando el número de ocurrencias de cada codón en una secuencia codificante. Luego utilizaremos índices que nos permitirán realizar comparaciones entre diferentes genes e incluso genomas.
+
+> ¿Qué es un CDS?
+Un CDS consiste en la región de un gen o ARN que codifica proteína. Esto excluye las regiones 5' y 3' UTR e intrones. Cada CDS completo contiene un número múltiple de 3 de nucleótidos, ya que cada aminoácido es codificado por una tríada de nucleótidos denominados codones. 
+
+# Obtención del uso de codones sinónimos
+
+En este ejemplo obtendremos el número de veces que ocurre un codón en la secuencia de un CDS con la función uco.
+
+## Importamos las secuencias a R
+
+```{r}
+library(seqinr)
+path_ecoliCDS <- "Path/a/Ecoli.ffn" # completar path
+s <- read.fasta(path_ecoliCDS)
+```
+
+## Obtención de ocurrencias de cada codón en un CDS.
+
+Para calcular el número de veces que aparece cada codón en un CDS utilizaremos `uco`. Para esto:
+
+
+```{r}
+s1 = s[[1]]
+```
+
+> ¿Qué hicimos acá?
+
+Ahora aplicamos la función `uco`:
+
+```{r}
+uco(s1)
+```
+
+> ¿Qué longitud tiene el resultado de aplicar el código anterior? ¿A qué corresponde ese número?
+
+## Obtención de ocurrencias de cada codón en todos los CDS en un genoma.
+
+Al aplicar uco de esta forma nos da el conteo de codones de cada tipo en una secuencia, no discrimina entre codones sinónimos y no sinónimos.
+
+Ahora hagamos el uco para todos los CDSs juntos, concatenados en un "supergén":
+
+#### Concatenamos todos los genes en una única secuencia. 
+
+Como s es una lista, bastará con aplicar unlist:
+
+```{r}
+S <- unlist(s)
+```
+
+#### Obtener ocurrencias de codones en todo el genoma
+
+```{r}
+ucoS <- uco(S)
+```
+
+> ¿Qué se obtiene?
+
+`ucoS` es un vector numérico, donde cada elemento corresponde al número de ocurrencias del codón especificado en el nombre del elemento. Por ejemplo, el codón tct se encontró 5024 veces en la secuencia.
+
+
+`ucoS` es el resultado de aplicar `uco()` sobre la secuencia de todos los genes concatenados en un supergen. Es un vector de 64 elementos, donde cada elemento corresponde a cuantas veces encontramos cada tipo de codón en la secuencia. Pero aún no sabemos a qué aminoácido corresponde cada codón. Para esto debemos traducir cada codón a aminoácido. 
+
+#### Aminoácidos codificados por codones en `ucoS`
+
+Como cada codón se encuentra en los nombres de los elementos del vector `ucoS`, primero extraemos los nombres de `ucoS`:
+
+```{r}
+# Código...
+```
+
+
+Ahora traducimos cada uno de los elementos de nucleótidos a aminoácidos, con la función `translate()`:
+
+```{r}
+translate(CODONES)
+```
+
+Vemos que al aplicar directamente translate al vector de codones nos da error.
+
+¿Por qué ocurre esto?
+
+Para responder esta pregunta veamos qué nos dice el manual de la función, al que accedemos utilizando `?translate`.
+
+> Ver en la sección de argumentos qué se requiere como `seq`
+
+Solución posible: Transformar el objeto con los codones en lo que necesita la función `translate()`.
+
+```{r}
+n1 <- # usar sapply o for loop
+```
+
+**Pregunta: **
+
+¿Qué tipo de objeto es n1 y cuántas dimensiones tiene? Utilizar class, typeof y dim.
+
+##### Con `sapply`
+
+En `n1` cada codón está representado en una columna.
+Ahora podremos aplicar translate para traducir cada codón a aminoácidos:
+
+```{r}
+# Código
+```
+
+#### Con `lapply`
+
+```{r}
+# Código
+```
+
+
+También podríamos obtener el aminoácido en formato de 3 letras, es decir, Lys en vez de K, Thr en vez de T, etc:
+
+```{r}
+nAAA <- aaa(nAA)
+nAAA
+```
+
+
+> Por definición los codones sinónimos son aquellos que codifican el mismo aminoácido. 
+
+Observando nAAA vemos que, por ejemplo, "aaa" y "aag" codifican lisina (Lys o K), etc.
+
+**Preguntas:**
+
+1. Considerando el objeto `nAAA`, y sabiendo que "Stp" corresponde a los codones stop: ¿En qué posición se encuentran los codones Stop en `nAAA`?
+2. En qué posiciones se encuentran los codones que codifican:
+	+ Arginina
+	+ Leucina
+	+ Tirosina
+	+ Fenilalanina
+	
+### Conteo de codones por aminoácido
+
+Ahora cambiaremos los nombres de `ucoS`, para que en vez de ser los codones contengan los aminiácidos codificados:
+
+```{r}
+names(ucoS) <- nAAA
+names(ucoS)
+```
+
+
+Para conocer el número de aminoácidos de cada tipo codificados en la secuencia basta con sumar los elementos de cada aminoácido. Por ejemplo, para determinar el número de argininas codificadas en la secuencia:
+
+**1.** Determinar las posiciones en las que encontramos argininas. Esto ya lo hicimos en el ejercicio anterior, pero ahora lo guardamos en un vector:
+
+```{r}
+vectArg <- grep("Arg",nAAA)
+vectArg
+```
+
+**2.** Extraer el número de ocurrencias de arginina para cada codón sinónimo y guardarlo en un vector:
+
+```{r}
+cArg <- ucoS[vectArg]
+```
+
+**3.** Sumar:
+
+```{r}
+sum(cArg)
+```
+
+Entonces hay ```sum(cArg)``` codones que codifican arginina en el genoma analizado.
+
+
+### Ejercicio 1:
+
+Representar mediante un gráfico de barras el número de codones encontrado para el aminoácido Arginina
+
+### Ejercicio 2:
+
+Dada las secuencias codificantes del genoma de la bacteria *Zymomonas mobilis subsp. pomaceae* ATCC 29192 disponible en el NCBI:
+
+```
+https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/218/875/GCF_000218875.1_ASM21887v1/GCF_000218875.1_ASM21887v1_genomic.fna.gz
+```
+
+- Determinar utilizando lo aprendido anteriormente los conteos de los aminoácidos arginina, isoleucina y triptofano.

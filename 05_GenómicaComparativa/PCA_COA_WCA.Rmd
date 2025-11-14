@@ -1,0 +1,342 @@
+---
+title: "PCA y COA"
+date: "`r Sys.Date()`"
+output:
+    html_document: 
+    	toc: true
+    	code_folding: show
+---
+
+
+# PCA: Análisis de componentes principales. Para datos cuantitativos.
+
+El PCA permite obtener un nuevo espacio de coordenadas independientes que capturan, en orden decreciente, la mayor cantidad de varianza en los datos. Esto permite visualizar si existe una estructura en los datos, y a partir de esto, generar hipótesis nuevas. Es por ello que se lo clasifica como un tipo de análisis exploratorio de reducción de dimensionalidad. 
+
+El análisis comienza escalando los datos de modo de contar con varianzas comparables. No tiene sentido comparar varianzas de dos variables que se mueven en rangos muy distintos, por ejemplo, que la Variable A se mueva entre 0 y 1, y la variable B se mueva entre 10 mil y 5 millones. Además es necesario centrar los datos: nótese que en el ejemplo anterior la variable A empieza en 0, mientras que la B empieza en 10 mil.
+
+Una vez escalados y centrados los datos, se procede a identificar la PC1 (Componente principal 1), la cual indica la dirección en un espacio multidimensional (muchas variables) donde se captura la mayor varianza. Las direcciones se determinan mediante la determinación de los vectores propios (eigenvectors) de la matriz de covarianzas, mientras que la magnitud de la varianza (que usaremos para determinar el órden de las PC) se determina mediante sus valores propios (eigenvalues). Cuanto mayor sea el eigenvalue, mayor es la cantidad de varianza de los datos capturada por su eigenvector correspondiente. La PC1 será aquella que tenga el valor propio mayor.
+
+Posteriormente se identifican las siguientes componentes, por orden de magnitud de los valores propios, cuyos vectores propios sean ortogonales (perpendiculares) entre sí. En 2 dimensiones, sólo exite una dirección posible para la segunda componente, una vez determinada la primera. Si tenemos 3 dimensiones, la segunda componente tendrá infinitas posibilidades teniendo en cuenta que todas deberán ser perpendiculares a la primera (la PC2 puede "girar" alrededor de la PC1, siempre que la intersecte de forma perpendicular), mientras que la tercer componente sólo tendrá una dirección posible una vez se determinen las direcciones de PC1 y PC2. Para N dimensiones (variables), el algoritmo repite lo anterior tantas veces como dimensiones tengan los datos originales. 
+
+Luego de identificar las direcciones y las magnitudes de las componentes principales, se tranforman los datos originales al nuevo sistema de coordenadas dado por los vectores y valores propios. Esto implica una transformación lineal de los datos originales. 
+
+## Ejemplo práctico
+
+Utilizaremos el dataset `iris`, el cual ya viene cargado en R, para entender cómo se realiza e interpreta una PCA. El dataset contiene 5 columnas (variables, dimensiones), 4 de ellas se corresponden con medidas de ancho y largo de pétalos y sépalos (estructuras de las plantas con flor), mientras que la 5ta columna tiene la variedad de planta que se corresponde a cada observación (filas).
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+head(iris) 
+```
+
+Nos quedamos con las primeras 4 columnas que son las que contienen los datos cuantitativos que necesitamos para realizar la PCA:
+
+```{r}
+iris_data <- iris[, 1:4]
+```
+
+### Paso 1: Escalar los datos
+El PCA requiere que los datos estén escalados para que todas las variables tengan la misma influencia:
+
+```{r}
+iris_scaled <- scale(iris_data)
+```
+### Paso 2: Realizar el PCA
+Utilizamos la función `prcomp` para realizar el análisis de componentes principales. Tener en cuenta que también recibe un parámetro `center` cuyo valor por default es `TRUE` (ver `?prcomp`), por lo que la función se encarga de centrar los datos. 
+
+```{r}
+pca_result <- prcomp(iris_scaled)
+
+# Inspeccionar los resultados del PCA
+summary(pca_result) # Muestra la varianza explicada por cada componente
+```
+Dado que la PCA implica una transformación lineal, los ejes originales "rotan" para tomar la posición del nuevo sistema de coordenadas. La direcciones de cada nuevo eje (componentes principales) vendrán dadas por la dirección de los vectores propios.
+```{r}
+pca_result$rotation # Muestra los vectores propios de cada PC (columnas)
+```
+### Paso 3: Graficar los componentes principales
+Visualizar los dos primeros componentes principales. Usamos el color para diferenciar las especies de iris. Del campo `$x` del objeto se obtienen las coordenadas de los datos (puntos) originales en el nuevo sistema de ejes.
+```{r}
+# Nuevas coordenadas en el sistema de ejes de las PC
+head(pca_result$x)
+
+# Cargo ggplot2
+library(ggplot2)
+
+# Transformo matrix a data.frame, y agrego columna "Species"
+pca_data <- as.data.frame(pca_result$x)
+pca_data$Species <- iris$Species
+head(pca_data)
+
+# Ploteamos PC1 vs PC2, coloreados por la columna "Species"
+ggplot(pca_data, aes(x = PC1, y = PC2, color = Species)) +
+  geom_point(size = 2) +
+  labs(title = "PCA de Iris: PC1 vs PC2", x = "Componente Principal 1", y = "Componente Principal 2") 
+```
+# Paso 4: Interpretación
+Ver la proporción de varianza explicada por cada componente:
+```{r}
+eigenvalues <- pca_result$sdev ^ 2
+varianza_explicada <- eigenvalues / sum(eigenvalues)
+varianza_explicada
+```
+
+Visualizar la varianza explicada acumulada
+```{r}
+plot(cumsum(varianza_explicada), type = "l", xlab = "Número de Componentes",
+     ylab = "Varianza Explicada Acumulada", main = "Varianza Explicada por Componentes Principales")
+```
+
+¿Cuánto contribuye cada variable a la varianza observada en cada PC?
+```{r}
+cargas <- t(pca_result$rotation)
+# Contribución de cada variable a la varianza de cada componente:
+contribuciones_por_componentes <- cargas^2
+contribuciones_por_componentes
+colSums(contribuciones_por_componentes) # 1
+
+# Contribución de cada variable a la varianza total explicada:
+contribuciones_totales <- t(t(contribuciones_por_componentes) * varianza_explicada)
+colSums(contribuciones_totales)
+
+sum(colSums(contribuciones_totales)) # 1
+```
+
+
+
+# Análisis de correspondencias (con ade4): Para datos de conteos
+ El análisis de correspondencias es una extensión de la PCA, que se utiliza principalmente para visualizar y analizar tablas de contingencia (tablas de conteos) y estudiar las relaciones entre dos variables categóricas. Este método es útil cuando queremos visualizar asociaciones entre las categorías de las filas y columnas de una tabla de contingencia.
+
+ Dado que los análisis de Uso de Codones se realizan a partir de conteos, esta variante de la PCA es la técnica adecuada para este tipo de datos.
+
+## Carga de datos
+Comenzamos ubicándonos en el directorio de trabajo y descargando los datos que utilizaremos para este práctico, los cuales se corresponden a las secuencias codificantes de dos organismos: _Eschericha coli_ str. K-12 substr. MG1655 y _Pseudomonas aeruginosa_ PA01:
+
+```{r, eval = FALSE}
+setwd("/home/jovian/Bioinformatica1_ORT/05_GenómicaComparativa/COA")
+```
+
+En la terminal:
+```{bash, eval = FALSE}
+# Descargo E coli
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_cds_from_genomic.fna.gz
+# Cambio nombre
+mv GCF_000005845.2_ASM584v2_cds_from_genomic.fna.gz ecoli.ffn
+
+# Descargo P aeruginosa
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_ASM676v1/GCF_000006765.1_ASM676v1_cds_from_genomic.fna.gz
+# Cambio nombre
+mv GCF_000006765.1_ASM676v1_cds_from_genomic.fna.gz paeruginosa.ffn
+```
+
+ > **Links disponibles:** [*Escherichia coli*](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_cds_from_genomic.fna.gz), [*Pseudomonas aruginosa*](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/765/GCF_000006765.1_ASM676v1/GCF_000006765.1_ASM676v1_cds_from_genomic.fna.gz).
+
+## Lectura de datos
+En primer lugar, cargamos las bibliotecas que necesitaremos (en R de nuevo):
+```{r}
+library(seqinr)
+library(ade4)
+```
+
+Leemos las CDS de los archivos que descargamos, y computamos uso de codones de cada gen utilizando la función `seqinr::uco`.
+
+```{r, cache= TRUE}
+# Carga CDS
+ecoli <- read.fasta("ecoli.ffn")
+paeru <- read.fasta("paeruginosa.ffn")
+
+# Computa uso de codones
+uco_E <- sapply(ecoli, uco)
+uco_P <- sapply(paeru, uco)
+
+class(uco_E) # Clase?
+dim(uco_E)   # Dimensiones? (filas, columnas)
+
+# Transforma a data.frame (sobreescribe objetos)
+uco_E <- as.data.frame(uco_E)
+uco_P <- as.data.frame(uco_P)
+
+class(uco_E)
+dim(uco_E)
+uco_E[1:5, 1:4] # imprime primeras 5 filas y primeras 4 columnas
+```
+
+Vamos a "pegar" ambos `data.frame` en uno sólo, de modo de obtener un nuevo `data.frame` que contenga las mismas filas (64), pero la suma de las columnas de ambos. Esto servirá como entrada para el Análisis de Correspondencia (COA).
+```{r}
+uco_tab <- cbind(uco_E, uco_P)
+dim(uco_tab)
+``` 
+
+## Análisis de correspondencias
+Utilizaremos la función `dudi.coa` (_Duality diagram_) del paquete `ade4` para realizar el análisis de correspondencias. 
+
+```{r}
+# Ejecutamos el COA
+coa <- dudi.coa(uco_tab, scannf = FALSE, nf = 3)
+coa
+```
+Los elementos del objeto `coa` son:
+
+  - `coa$nf` indica cuantos ejes se conservaron.
+  - `coa$cw` es un vector numérico que contiene los pesos de las columnas.
+  - `coa$lw` es un vector numérico que contiene los pesos de las filas.
+  - `coa$eig` es un vector numérico que contiene los eigenvalues (valores propios).
+  - `coa$tab` es un data frame que contiene la matriz de entrada.
+  - `coa$li` es un data frame que contiene las coordenadas de las filas en los 3 ejes que se conservaron.
+  - `coa$co` es un data frame que contiene las coordenadas de las columnas en los 3 ejes que se conservaron.
+  - `coa$l1` es un data frame que contiene los componentes principales.
+  - `coa$c1` es un data frame que contiene los ejes principales.
+
+Obteniendo las coordenadas de los datos en los nuevos ejes podemos graficar los conteos en las componentes nuevas. Para las columnas (genes) graficaremos puntos coloreados según organismo, y para las filas (codones) graficatemos etiquetas. 
+```{r}
+# Extraigo las coordenadas de las columnas y le agrego una columna deacuerdo al organismo.
+coa_genes <- coa$co
+coa_genes$Organism <- c(rep("E. coli", ncol(uco_E)), rep("P aeru", ncol(uco_P)))
+head(coa_genes)
+
+# Extraigo coordenadas de las filas, y le agrego una columna con los
+# codones que están codificados como nombres de la fila:
+coa_codones <- coa$li
+coa_codones$Etiqueta <- rownames(coa_codones)
+
+# Cargo ggplot2
+library(ggplot2)
+
+ggplot(coa_genes, aes(x = Comp1, y = Comp2)) +
+  geom_point(mapping = aes(color = Organism)) +
+  geom_label(data = coa_codones, mapping = aes(x = Axis1, y = Axis2, label = Etiqueta)) +
+  geom_hline(yintercept = 0, color = "blue") +
+  geom_vline(xintercept = 0, color = "blue") +
+  theme_classic()
+
+```
+
+### Interpretación del COA
+El gráfico muestra cómo los diferentes genes se asocian con ciertos patrones de uso de codones. El problema de este análisis es que estamos utilizando conteos brutos. Si uno de los genomas tiene más genes, o utiliza con más frecuencia ciertos aminoácidos, los conteos no son comparables. Es necesario normalizar esto, como veremos a continuación.
+
+## Análisis de correspondencia dentro de una clase (Within-class)
+
+Como se explicó más arriba, debemos normalizar los resultados ajustando los valores de cada codón en función de los aminoácidos que codifican de modo de evitar la influencia de la composición de aminoácidos en los resultados de uso sinónimo de codones. Dado que algunos aminoácidos tienen pocos codones (por ejemplo, la cisteína solo tiene dos) y otros tienen varios, la variabilidad en la frecuencia de codones puede reflejar diferencias en la composición de aminoácidos más que en el uso sinónimo de los codones mismos. Esto introduce un sesgo en el análisis, ya que la distribución de codones podría estar influenciada más por las proporciones de aminoácidos en las proteínas que por las preferencias reales de uso de codones en un organismo o grupo de genes específico. 
+
+El ajuste, que se realiza mediante el método "within-class analysis" (WCA), permite que los datos del uso de codones reflejen diferencias atribuibles únicamente a las preferencias sinónimas (o redundancia en el código genético) y no a la variabilidad en la composición de aminoácidos. En el WCA, los valores de cada codón se centran según el promedio de todos los codones que codifican el mismo aminoácido, aislando así el efecto de selección sinónima y permitiendo un análisis más preciso y comparativo entre genes o especies bacterianas. 
+
+Es un ajuste similar al que realizamos calculando el índice RSCU en las clases pasadas, necesario ya que los datos de entrada al COA son conteos brutos. En otras palabras, el WCA ayuda a que podamos ver las "preferencias de codones" de cada organismo de manera justa y comparable, eliminando la influencia de la variabilidad en las cantidades de aminoácidos requeridos en sus proteínas.
+
+Para normalizar el uso de codones sinónimos (por aminoácido) en primer lugar generaremos un vector de factores con los aminoácidos correspondientes a cada codón. 
+
+Para más información, ver [*Comparison of Correspondence Analysis Methods for Synonymous Codon Usage in Bacteria*](https://pmc.ncbi.nlm.nih.gov/articles/PMC2608848/) (Suzuki, et al. 2008).
+
+ > **Nota:** Los factores se utilizan para representar datos categóricos. Se almacenan como enteros, y tienen etiquetas o niveles asociadas a esos enteros. Aunque los factores parezcan y se comporten como vectores de caracteres, en realidad son enteros, y hay que tener cuidado al utilizarlos como cadenas de caracteres. Una vez creados, los factores pueden tener sólo valores predefinidos, a los que llamamos levels. Por defecto, R siempre almacena los levels en orden alfabético.
+
+```{r}
+# Podemos recuperar los codones de los nombres de las filas de uco_tab:
+codones_vect <- rownames(uco_tab)
+codones_vect
+# "Rompemos" strings a caracteres únicos con s2c, traducimos,
+# pasamos a código de 3 letras, y transdormamos a "factor"
+AAA_factor <- as.factor(aaa(translate(sapply(codones_vect,s2c))))
+AAA_factor
+```
+Ahora utilizando este vector de factores, se lo pasamos a la función `wca` que realizará la normalización. `wca` necesita el primer COA realizado, sobre el cual normalizará los datos. El argumento `fac` dice: `a factor partitioning the rows of dudi$tab in classes`, que en nuestros datos originales se correspondian a cada codón. `wca` va a utilizar esta información para agrupar los codones de acuerdo al aminoácido y normalizar los conteos.
+```{r}
+wi_coa <- wca(x = coa, fac = AAA_factor, scan = FALSE, nf = 3)
+```
+El objeto `wi_coa` es una lista, que tiene los vectores y `data.frame`s similares a los del objeto `coa`. Así, `wi_coa$co` es un data frame que contiene las coordenadas de las columnas en los 3 ejes conservados. 
+
+Para graficar el _within-coa_ hacemos lo mismo que la vez anterior:
+```{r}
+# Extraigo las coordenadas de las columnas y le agrego una columna deacuerdo al organismo.
+wi_coa_genes <- wi_coa$co
+wi_coa_genes$Organism <- c(rep("E. coli", ncol(uco_E)), rep("P aeru", ncol(uco_P)))
+head(wi_coa_genes)
+
+# Extraigo coordenadas de las filas, y le agrego una columna con los
+# codones que están codificados como nombres de la fila:
+wi_coa_codones <- wi_coa$li
+wi_coa_codones$Etiqueta <- rownames(wi_coa_codones)
+
+ggplot(wi_coa_genes, aes(x = Comp1, y = Comp2)) +
+  geom_point(mapping = aes(color = Organism)) +
+  geom_label(data = wi_coa_codones, mapping = aes(x = Axis1, y = Axis2, label = Etiqueta)) +
+  geom_hline(yintercept = 0, color = "blue") +
+  geom_vline(xintercept = 0, color = "blue") +
+  ylab("PC2") + 
+  xlab("PC1") +
+  theme_classic()
+```
+
+Ahora sí el gráfico nos da la información que buscábamos. Vemos que hay genes más asociados al uso de ciertos codones, por parte de cada organismo, y que a su vez los organismos usan los codones de forma distinta.
+
+## Asociación del UCO con el GC
+Puedo ver cual es el GC de los codones representados por valores positivos o negativos del eje 1 o del 2, para ver si GC varía según alguno de estos ejes: 
+
+ - Los valores de GC de los puntos con x>0 son:
+```{r}
+# Recuperamos los codones que están a la derecha (x>0) de la 
+# Componente 1 (codones more than x0, mtx0)
+codones_mtx0 <- wi_coa_codones$Etiqueta[which(wi_coa_codones$Axis1 > 0)]
+# Calculo el GC promedio de dichos codones
+GC(sapply(codones_mtx0, s2c))
+```
+ - Los valores de GC de los puntos con x<0 son:
+```{r}
+# Recuperamos los codones que están a la derecha (x<0) de la 
+# Componente 1 (codones less than x0, ltx0)
+codones_ltx0 <- wi_coa_codones$Etiqueta[which(wi_coa_codones$Axis1 < 0)]
+# Calculo el GC promedio de dichos codones
+GC(sapply(codones_ltx0, s2c))
+```
+Acá vemos que los codones que está a la derecha (x>0 ) tienen menores contenidos GC que los que están a la izquierda (x<0 ).
+- Los valores de GC de los puntos con y>0 son:
+```{r}
+# Recuperamos los codones que están arriba (y>0) de la 
+# Componente 2 (codones more than y0, mty0)
+codones_mty0 <- wi_coa_codones$Etiqueta[which(wi_coa_codones$Axis2 > 0)]
+# Calculo el GC promedio de dichos codones
+GC(sapply(codones_mty0, s2c))
+```
+ - Los valores de GC de los puntos con y<0 son:
+```{r}
+# Recuperamos los codones que están abajo (y<0) de la 
+# Componente 2 (codones less than y0, lty0)
+codones_lty0 <- wi_coa_codones$Etiqueta[which(wi_coa_codones$Axis2 < 0)]
+# Calculo el GC promedio de dichos codones
+GC(sapply(codones_lty0, s2c))
+```
+
+En el eje y, las diferencias en el contenido GC no son tan grandes. Igualmente, para saber si el contenido GC y el uso de codones están correlacionados, debemos aplicar un análisis de correlación. Utilizaremos la función `cor`. Primero vamos a calcular los GC promedio, GC1, GC2, y GC3 para cada gen y crearemos una tabla:
+
+```{r}
+# data.frame con GC, GC1, GC2, y GC3, para cada organismo
+# Ecoli
+tableGC_ecoli <- data.frame(
+  GC = sapply(ecoli, GC),
+  GC1 = sapply(ecoli, GC1),
+  GC2 = sapply(ecoli, GC2),
+  GC3 = sapply(ecoli, GC3)
+)
+# P aeruginosa
+tableGC_paeru <- data.frame(
+  GC = sapply(paeru, GC),
+  GC1 = sapply(paeru, GC1),
+  GC2 = sapply(paeru, GC2),
+  GC3 = sapply(paeru, GC3)
+)
+
+# Concatenamos ambas tablas
+table_GC <- rbind(tableGC_ecoli, tableGC_paeru)
+```
+Ahora sí calculamos correlaciones:
+```{r}
+cor(table_GC, wi_coa$co)
+```
+
+Aquí vemos que la mayor correlación entre los codones y el contenido GC lo encontramos en el eje principal (Comp1), y que la mayor correlación se da con el contenido GC en la 3era posición del codón (GC3), con un índice de correlación de -0.9904470. El hecho de que la correlación sea negativa es arbitrario, porque el sentido de los ejes lo es, así que interpreto que los genes con más GC% estarán a la izquierda en el gráfico, y los que tienen menos, a la derecha.
+
+Puedo utilizar otros parámetros para correlacionar con el uso de codones. Utilizando la salida de codonW, vemos como se correlacionan el uso de codones con la aromaticidad y con la hidrofobicidad de los aminoácidos que codifican:
+
+ 1. Leer la tabla todos.out.
+ 2. Utilizar la función apropiada para correlacionar `wi_coa$co` con la aromaticidad de los codones.
