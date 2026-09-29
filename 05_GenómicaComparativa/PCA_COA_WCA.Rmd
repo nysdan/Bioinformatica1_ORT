@@ -44,8 +44,10 @@ El PCA requiere que los datos estén escalados para que todas las variables teng
 ```{r}
 iris_scaled <- scale(iris_data)
 ```
+
 ### Paso 2: Realizar el PCA
 Utilizamos la función `prcomp` para realizar el análisis de componentes principales. Tener en cuenta que también recibe un parámetro `center` cuyo valor por default es `TRUE` (ver `?prcomp`), por lo que la función se encarga de centrar los datos. 
+
 
 ```{r}
 pca_result <- prcomp(iris_scaled)
@@ -53,12 +55,16 @@ pca_result <- prcomp(iris_scaled)
 # Inspeccionar los resultados del PCA
 summary(pca_result) # Muestra la varianza explicada por cada componente
 ```
+
 Dado que la PCA implica una transformación lineal, los ejes originales "rotan" para tomar la posición del nuevo sistema de coordenadas. La direcciones de cada nuevo eje (componentes principales) vendrán dadas por la dirección de los vectores propios.
+
 ```{r}
 pca_result$rotation # Muestra los vectores propios de cada PC (columnas)
 ```
+
 ### Paso 3: Graficar los componentes principales
 Visualizar los dos primeros componentes principales. Usamos el color para diferenciar las especies de iris. Del campo `$x` del objeto se obtienen las coordenadas de los datos (puntos) originales en el nuevo sistema de ejes.
+
 ```{r}
 # Nuevas coordenadas en el sistema de ejes de las PC
 head(pca_result$x)
