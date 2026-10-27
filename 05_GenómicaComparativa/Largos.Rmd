@@ -1,14 +1,13 @@
 ---
 title: "Genómica Comparativa: largos de los genomas"
 author: "Prof. Daniela Costa"
-date: "08/11/2025"
 output: 
   html_document: 
     toc: true
     code_folding: hide
 ---
 
-```{r setup, include=FALSE}
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(seqinr)
